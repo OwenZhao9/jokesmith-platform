@@ -1,5 +1,5 @@
 name = "jokesmith"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist/public"
 compatibility_flags = ["nodejs_compat"]
 
