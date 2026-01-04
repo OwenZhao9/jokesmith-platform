@@ -1,0 +1,329 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  /* Custom neon colors */
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-blue: var(--neon-blue);
+  --color-neon-yellow: var(--neon-yellow);
+}
+
+/* American Comedy Club Dark Theme */
+:root {
+  --radius: 0.65rem;
+  /* Deep dark background with slight purple tint */
+  --background: oklch(0.12 0.015 280);
+  --foreground: oklch(0.95 0.01 90);
+  --card: oklch(0.16 0.02 280);
+  --card-foreground: oklch(0.95 0.01 90);
+  --popover: oklch(0.18 0.02 280);
+  --popover-foreground: oklch(0.95 0.01 90);
+  /* Neon pink/red primary */
+  --primary: oklch(0.68 0.25 350);
+  --primary-foreground: oklch(0.98 0 0);
+  /* Neon purple secondary */
+  --secondary: oklch(0.55 0.2 290);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.22 0.02 280);
+  --muted-foreground: oklch(0.65 0.02 90);
+  /* Neon blue accent */
+  --accent: oklch(0.6 0.2 250);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.25 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.28 0.03 280);
+  --input: oklch(0.2 0.02 280);
+  --ring: oklch(0.68 0.25 350);
+  /* Chart colors - neon palette */
+  --chart-1: oklch(0.68 0.25 350);
+  --chart-2: oklch(0.55 0.2 290);
+  --chart-3: oklch(0.6 0.2 250);
+  --chart-4: oklch(0.85 0.2 90);
+  --chart-5: oklch(0.6 0.2 150);
+  /* Sidebar */
+  --sidebar: oklch(0.1 0.01 280);
+  --sidebar-foreground: oklch(0.95 0.01 90);
+  --sidebar-primary: oklch(0.68 0.25 350);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.2 0.03 280);
+  --sidebar-accent-foreground: oklch(0.95 0.01 90);
+  --sidebar-border: oklch(0.25 0.02 280);
+  --sidebar-ring: oklch(0.68 0.25 350);
+  /* Neon glow colors */
+  --neon-pink: oklch(0.72 0.28 350);
+  --neon-purple: oklch(0.6 0.25 290);
+  --neon-blue: oklch(0.65 0.22 250);
+  --neon-yellow: oklch(0.88 0.2 90);
+}
+
+/* Dark mode is the default, but keep this for compatibility */
+.dark {
+  --background: oklch(0.12 0.015 280);
+  --foreground: oklch(0.95 0.01 90);
+  --card: oklch(0.16 0.02 280);
+  --card-foreground: oklch(0.95 0.01 90);
+  --popover: oklch(0.18 0.02 280);
+  --popover-foreground: oklch(0.95 0.01 90);
+  --primary: oklch(0.68 0.25 350);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.55 0.2 290);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.22 0.02 280);
+  --muted-foreground: oklch(0.65 0.02 90);
+  --accent: oklch(0.6 0.2 250);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.25 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.28 0.03 280);
+  --input: oklch(0.2 0.02 280);
+  --ring: oklch(0.68 0.25 350);
+  --chart-1: oklch(0.68 0.25 350);
+  --chart-2: oklch(0.55 0.2 290);
+  --chart-3: oklch(0.6 0.2 250);
+  --chart-4: oklch(0.85 0.2 90);
+  --chart-5: oklch(0.6 0.2 150);
+  --sidebar: oklch(0.1 0.01 280);
+  --sidebar-foreground: oklch(0.95 0.01 90);
+  --sidebar-accent: oklch(0.2 0.03 280);
+  --sidebar-accent-foreground: oklch(0.95 0.01 90);
+  --sidebar-border: oklch(0.25 0.02 280);
+  --sidebar-ring: oklch(0.68 0.25 350);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+  
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: oklch(0.12 0.015 280);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.3 0.03 280);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.4 0.05 280);
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1400px;
+    }
+  }
+  
+  /* Brick wall texture background */
+  .brick-bg {
+    background-color: oklch(0.12 0.015 280);
+    background-image: 
+      linear-gradient(90deg, oklch(0.1 0.01 280 / 0.6) 1px, transparent 1px),
+      linear-gradient(oklch(0.1 0.01 280 / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.18 0.02 20 / 0.08) 0%, oklch(0.12 0.015 280 / 0.08) 100%);
+    background-size: 60px 30px, 60px 30px, 100% 100%;
+    background-position: 0 0, 30px 15px, 0 0;
+  }
+  
+  /* Comedy club card style */
+  .club-card {
+    @apply bg-card rounded-lg border border-border p-6;
+    background: linear-gradient(
+      135deg,
+      oklch(0.16 0.02 280) 0%,
+      oklch(0.12 0.015 280) 100%
+    );
+  }
+  
+  /* Spotlight effect */
+  .spotlight {
+    position: relative;
+    overflow: hidden;
+  }
+  .spotlight::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at center,
+      oklch(0.95 0 90 / 0.03) 0%,
+      transparent 40%
+    );
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  /* Display font for headings - poster style */
+  .font-display {
+    font-family: "Bebas Neue", "Impact", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  
+  /* Neon text glow effects */
+  .neon-pink {
+    color: var(--neon-pink);
+    text-shadow: 
+      0 0 5px oklch(0.72 0.28 350 / 0.8),
+      0 0 10px oklch(0.72 0.28 350 / 0.6),
+      0 0 20px oklch(0.72 0.28 350 / 0.4),
+      0 0 40px oklch(0.72 0.28 350 / 0.2);
+  }
+  
+  .neon-purple {
+    color: var(--neon-purple);
+    text-shadow: 
+      0 0 5px oklch(0.6 0.25 290 / 0.8),
+      0 0 10px oklch(0.6 0.25 290 / 0.6),
+      0 0 20px oklch(0.6 0.25 290 / 0.4),
+      0 0 40px oklch(0.6 0.25 290 / 0.2);
+  }
+  
+  .neon-blue {
+    color: var(--neon-blue);
+    text-shadow: 
+      0 0 5px oklch(0.65 0.22 250 / 0.8),
+      0 0 10px oklch(0.65 0.22 250 / 0.6),
+      0 0 20px oklch(0.65 0.22 250 / 0.4),
+      0 0 40px oklch(0.65 0.22 250 / 0.2);
+  }
+  
+  /* Neon box glow */
+  .neon-box-pink {
+    box-shadow: 
+      0 0 5px oklch(0.72 0.28 350 / 0.5),
+      0 0 15px oklch(0.72 0.28 350 / 0.3),
+      inset 0 0 5px oklch(0.72 0.28 350 / 0.1);
+  }
+  
+  .neon-box-purple {
+    box-shadow: 
+      0 0 5px oklch(0.6 0.25 290 / 0.5),
+      0 0 15px oklch(0.6 0.25 290 / 0.3),
+      inset 0 0 5px oklch(0.6 0.25 290 / 0.1);
+  }
+  
+  .neon-box-blue {
+    box-shadow: 
+      0 0 5px oklch(0.65 0.22 250 / 0.5),
+      0 0 15px oklch(0.65 0.22 250 / 0.3),
+      inset 0 0 5px oklch(0.65 0.22 250 / 0.1);
+  }
+  
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(
+      90deg,
+      oklch(0.72 0.28 350) 0%,
+      oklch(0.6 0.25 290) 50%,
+      oklch(0.65 0.22 250) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Animation for neon flicker */
+  @keyframes neon-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+      opacity: 1;
+    }
+    20%, 24%, 55% {
+      opacity: 0.8;
+    }
+  }
+  
+  .animate-neon-flicker {
+    animation: neon-flicker 3s infinite;
+  }
+  
+  /* Microphone icon styling */
+  .mic-icon {
+    filter: drop-shadow(0 0 8px oklch(0.72 0.28 350 / 0.6));
+  }
+}
