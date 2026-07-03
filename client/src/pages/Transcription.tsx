@@ -1,11 +1,28 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import AuthRequiredCard from "@/components/AuthRequiredCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { AudioLines, Upload, Loader2, FileText, Play, Trash2, Check, X, AlertCircle } from "lucide-react";
+import {
+  AudioLines,
+  Upload,
+  Loader2,
+  FileText,
+  Play,
+  Trash2,
+  Check,
+  X,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -47,11 +64,30 @@ const categories = [
   { value: "other", label: "其他" },
 ];
 
-const statusLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  pending: { label: "待处理", icon: <AlertCircle className="h-3 w-3" />, color: "bg-yellow-500/20 text-yellow-400" },
-  processing: { label: "处理中", icon: <Loader2 className="h-3 w-3 animate-spin" />, color: "bg-blue-500/20 text-blue-400" },
-  completed: { label: "已完成", icon: <Check className="h-3 w-3" />, color: "bg-green-500/20 text-green-400" },
-  failed: { label: "失败", icon: <X className="h-3 w-3" />, color: "bg-red-500/20 text-red-400" },
+const statusLabels: Record<
+  string,
+  { label: string; icon: React.ReactNode; color: string }
+> = {
+  pending: {
+    label: "待处理",
+    icon: <AlertCircle className="h-3 w-3" />,
+    color: "bg-yellow-500/20 text-yellow-400",
+  },
+  processing: {
+    label: "处理中",
+    icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    color: "bg-blue-500/20 text-blue-400",
+  },
+  completed: {
+    label: "已完成",
+    icon: <Check className="h-3 w-3" />,
+    color: "bg-green-500/20 text-green-400",
+  },
+  failed: {
+    label: "失败",
+    icon: <X className="h-3 w-3" />,
+    color: "bg-red-500/20 text-red-400",
+  },
 };
 
 export default function Transcription() {
@@ -65,17 +101,23 @@ export default function Transcription() {
   const [convertCategory, setConvertCategory] = useState("other");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: transcriptions, isLoading, refetch } = trpc.transcription.list.useQuery();
+  const {
+    data: transcriptions,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = trpc.transcription.list.useQuery(undefined, { retry: false });
   const utils = trpc.useUtils();
 
   const createMutation = trpc.transcription.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success("音频已上传，开始转录");
       refetch();
       // Auto-start processing
       processMutation.mutate({ id: data.id });
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("上传失败：" + error.message);
     },
   });
@@ -85,7 +127,7 @@ export default function Transcription() {
       toast.success("转录完成！");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("转录失败：" + error.message);
       refetch();
     },
@@ -100,7 +142,7 @@ export default function Transcription() {
       setConvertTitle("");
       setConvertCategory("other");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("转化失败：" + error.message);
     },
   });
@@ -117,7 +159,15 @@ export default function Transcription() {
     }
 
     // Check file type
-    const allowedTypes = ["audio/webm", "audio/mp3", "audio/mpeg", "audio/wav", "audio/ogg", "audio/m4a", "audio/mp4"];
+    const allowedTypes = [
+      "audio/webm",
+      "audio/mp3",
+      "audio/mpeg",
+      "audio/wav",
+      "audio/ogg",
+      "audio/m4a",
+      "audio/mp4",
+    ];
     if (!allowedTypes.includes(file.type)) {
       toast.error("不支持的音频格式，请上传 mp3、wav、webm、ogg 或 m4a 格式");
       return;
@@ -133,7 +183,11 @@ export default function Transcription() {
 
       // Upload to S3
       const arrayBuffer = await file.arrayBuffer();
-      const result = await storagePut(fileKey, new Uint8Array(arrayBuffer), file.type);
+      const result = await storagePut(
+        fileKey,
+        new Uint8Array(arrayBuffer),
+        file.type
+      );
 
       // Create transcription record
       createMutation.mutate({
@@ -141,7 +195,9 @@ export default function Transcription() {
         audioKey: result.key,
       });
     } catch (error) {
-      toast.error("上传失败：" + (error instanceof Error ? error.message : "未知错误"));
+      toast.error(
+        "上传失败：" + (error instanceof Error ? error.message : "未知错误")
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -159,7 +215,15 @@ export default function Transcription() {
     convertMutation.mutate({
       id: selectedTranscription.id,
       title: convertTitle.trim(),
-      category: convertCategory as "politics" | "life" | "roast" | "relationship" | "work" | "family" | "tech" | "other",
+      category: convertCategory as
+        | "politics"
+        | "life"
+        | "roast"
+        | "relationship"
+        | "work"
+        | "family"
+        | "tech"
+        | "other",
     });
   };
 
@@ -173,7 +237,9 @@ export default function Transcription() {
         <AudioLines className="h-8 w-8 text-primary mic-icon" />
         <div>
           <h1 className="text-2xl font-display neon-pink">录音转文字</h1>
-          <p className="text-muted-foreground text-sm">上传演出或排练录音，自动转录为文字</p>
+          <p className="text-muted-foreground text-sm">
+            上传演出或排练录音，自动转录为文字
+          </p>
         </div>
       </div>
 
@@ -215,7 +281,12 @@ export default function Transcription() {
       {/* Transcriptions List */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">转录记录</h2>
-        {isLoading ? (
+        {isError ? (
+          <AuthRequiredCard
+            title="需要登录后查看转录记录"
+            description={error.message}
+          />
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
@@ -228,14 +299,18 @@ export default function Transcription() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {transcriptions.map((transcription) => {
+            {transcriptions.map(transcription => {
               const statusInfo = statusLabels[transcription.status];
               return (
                 <Card key={transcription.id} className="club-card">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardDescription className="text-xs">
-                        {format(new Date(transcription.createdAt), "yyyy年MM月dd日 HH:mm", { locale: zhCN })}
+                        {format(
+                          new Date(transcription.createdAt),
+                          "yyyy年MM月dd日 HH:mm",
+                          { locale: zhCN }
+                        )}
                       </CardDescription>
                       <Badge className={`gap-1 ${statusInfo.color}`}>
                         {statusInfo.icon}
@@ -244,7 +319,8 @@ export default function Transcription() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {transcription.status === "completed" && transcription.transcribedText ? (
+                    {transcription.status === "completed" &&
+                    transcription.transcribedText ? (
                       <>
                         <p className="text-sm whitespace-pre-wrap line-clamp-4">
                           {transcription.transcribedText}
@@ -257,7 +333,8 @@ export default function Transcription() {
                               onClick={() => {
                                 setSelectedTranscription({
                                   id: transcription.id,
-                                  transcribedText: transcription.transcribedText,
+                                  transcribedText:
+                                    transcription.transcribedText,
                                 });
                                 setConvertDialogOpen(true);
                               }}
@@ -276,7 +353,9 @@ export default function Transcription() {
                       </>
                     ) : transcription.status === "failed" ? (
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-destructive">转录失败，请重试</p>
+                        <p className="text-sm text-destructive">
+                          转录失败，请重试
+                        </p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -297,7 +376,9 @@ export default function Transcription() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">等待处理</p>
+                        <p className="text-sm text-muted-foreground">
+                          等待处理
+                        </p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -335,17 +416,20 @@ export default function Transcription() {
                 id="convert-title"
                 placeholder="输入稿件标题"
                 value={convertTitle}
-                onChange={(e) => setConvertTitle(e.target.value)}
+                onChange={e => setConvertTitle(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>分类</Label>
-              <Select value={convertCategory} onValueChange={setConvertCategory}>
+              <Select
+                value={convertCategory}
+                onValueChange={setConvertCategory}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>
@@ -355,10 +439,16 @@ export default function Transcription() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConvertDialogOpen(false)}
+            >
               取消
             </Button>
-            <Button onClick={handleConvert} disabled={convertMutation.isPending}>
+            <Button
+              onClick={handleConvert}
+              disabled={convertMutation.isPending}
+            >
               {convertMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

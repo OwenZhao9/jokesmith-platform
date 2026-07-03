@@ -11,21 +11,24 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { 
-  Mic, 
-  FileText, 
-  Calendar, 
-  Lightbulb, 
-  Brain, 
-  AudioLines, 
+import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  Mic,
+  FileText,
+  Calendar,
+  Lightbulb,
+  Brain,
+  AudioLines,
   Sparkles,
   User,
-  PanelLeft 
+  PanelLeft,
+  ShieldCheck,
+  Activity,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
-const menuItems = [
+const baseMenuItems = [
   { icon: Sparkles, label: "AI 写稿", path: "/" },
   { icon: FileText, label: "稿件管理", path: "/scripts" },
   { icon: Lightbulb, label: "灵感库", path: "/inspirations" },
@@ -33,7 +36,10 @@ const menuItems = [
   { icon: Calendar, label: "演出排表", path: "/shows" },
   { icon: AudioLines, label: "录音转文字", path: "/transcription" },
   { icon: User, label: "个人风格", path: "/style" },
+  { icon: Activity, label: "运行状态", path: "/status" },
 ];
+
+const adminMenuItem = { icon: ShieldCheck, label: "管理后台", path: "/admin" };
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 260;
@@ -83,6 +89,9 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const menuItems =
+    user?.role === "admin" ? [...baseMenuItems, adminMenuItem] : baseMenuItems;
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
@@ -160,12 +169,14 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal ${isActive ? 'bg-primary/10' : ''}`}
+                      className={`h-10 transition-all font-normal ${isActive ? "bg-primary/10" : ""}`}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                       />
-                      <span className={isActive ? "text-primary" : ""}>{item.label}</span>
+                      <span className={isActive ? "text-primary" : ""}>
+                        {item.label}
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

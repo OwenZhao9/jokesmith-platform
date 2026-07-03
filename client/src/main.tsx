@@ -1,7 +1,8 @@
 import { trpc } from "@/lib/trpc";
-import { UNAUTHED_ERR_MSG } from '@shared/const';
+import { buildApiUrl } from "@/lib/api";
+import { UNAUTHED_ERR_MSG } from "@shared/const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { httpBatchLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
@@ -10,21 +11,38 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+const isUnauthorizedError = (error: unknown) => {
+  if (!error || typeof error !== "object") return false;
+
+  const trpcError = error as {
+    data?: { code?: unknown };
+    message?: unknown;
+  };
+  const message =
+    typeof trpcError.message === "string" ? trpcError.message : "";
+
+  return (
+    trpcError.data?.code === "UNAUTHORIZED" ||
+    message === UNAUTHED_ERR_MSG ||
+    message.includes(UNAUTHED_ERR_MSG)
+  );
+};
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
-  if (!(error instanceof TRPCClientError)) return;
-  if (typeof window === "undefined") return;
+  if (!isUnauthorizedError(error)) return false;
+  if (typeof window === "undefined") return false;
 
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
+  const loginUrl = getLoginUrl();
+  if (!loginUrl || loginUrl === "#") return true;
 
-  if (!isUnauthorized) return;
-
-  window.location.href = getLoginUrl();
+  window.location.href = loginUrl;
+  return true;
 };
 
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
-    redirectToLoginIfUnauthorized(error);
+    if (redirectToLoginIfUnauthorized(error)) return;
     console.error("[API Query Error]", error);
   }
 });
@@ -32,7 +50,7 @@ queryClient.getQueryCache().subscribe(event => {
 queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
-    redirectToLoginIfUnauthorized(error);
+    if (redirectToLoginIfUnauthorized(error)) return;
     console.error("[API Mutation Error]", error);
   }
 });
@@ -40,7 +58,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: buildApiUrl("/api/trpc"),
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {

@@ -1,8 +1,15 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import AuthRequiredCard from "@/components/AuthRequiredCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Plus, Search, Trash2, Edit, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -56,10 +63,19 @@ export default function Scripts() {
   const [category, setCategory] = useState("all");
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data: scripts, isLoading, refetch } = trpc.scripts.list.useQuery({
-    category: category === "all" ? undefined : category,
-    search: search || undefined,
-  });
+  const {
+    data: scripts,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = trpc.scripts.list.useQuery(
+    {
+      category: category === "all" ? undefined : category,
+      search: search || undefined,
+    },
+    { retry: false }
+  );
 
   const deleteMutation = trpc.scripts.delete.useMutation({
     onSuccess: () => {
@@ -67,7 +83,7 @@ export default function Scripts() {
       refetch();
       setDeleteId(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("删除失败：" + error.message);
     },
   });
@@ -89,10 +105,15 @@ export default function Scripts() {
           <FileText className="h-8 w-8 text-primary mic-icon" />
           <div>
             <h1 className="text-2xl font-display neon-pink">稿件管理</h1>
-            <p className="text-muted-foreground text-sm">管理你的所有脱口秀稿件</p>
+            <p className="text-muted-foreground text-sm">
+              管理你的所有脱口秀稿件
+            </p>
           </div>
         </div>
-        <Button onClick={() => setLocation("/scripts/new")} className="neon-box-pink">
+        <Button
+          onClick={() => setLocation("/scripts/new")}
+          className="neon-box-pink"
+        >
           <Plus className="mr-2 h-4 w-4" />
           新建稿件
         </Button>
@@ -105,7 +126,7 @@ export default function Scripts() {
           <Input
             placeholder="搜索稿件..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             className="pl-9 bg-input"
           />
         </div>
@@ -114,7 +135,7 @@ export default function Scripts() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((cat) => (
+            {categories.map(cat => (
               <SelectItem key={cat.value} value={cat.value}>
                 {cat.label}
               </SelectItem>
@@ -124,7 +145,12 @@ export default function Scripts() {
       </div>
 
       {/* Scripts List */}
-      {isLoading ? (
+      {isError ? (
+        <AuthRequiredCard
+          title="需要登录后查看稿件"
+          description={error.message}
+        />
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -133,7 +159,9 @@ export default function Scripts() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-muted-foreground">
-              {search || category !== "all" ? "没有找到匹配的稿件" : "还没有稿件，开始创作吧！"}
+              {search || category !== "all"
+                ? "没有找到匹配的稿件"
+                : "还没有稿件，开始创作吧！"}
             </p>
             {!search && category === "all" && (
               <Button
@@ -149,7 +177,7 @@ export default function Scripts() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredScripts.map((script) => (
+          {filteredScripts.map(script => (
             <Card
               key={script.id}
               className="club-card cursor-pointer hover:border-primary/50 transition-colors group"
@@ -165,7 +193,9 @@ export default function Scripts() {
                   </Badge>
                 </div>
                 <CardDescription className="text-xs">
-                  {format(new Date(script.updatedAt), "yyyy年MM月dd日 HH:mm", { locale: zhCN })}
+                  {format(new Date(script.updatedAt), "yyyy年MM月dd日 HH:mm", {
+                    locale: zhCN,
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -174,7 +204,7 @@ export default function Scripts() {
                 </p>
                 {script.tags && script.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {script.tags.slice(0, 3).map((tag) => (
+                    {script.tags.slice(0, 3).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -190,7 +220,7 @@ export default function Scripts() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       setLocation(`/scripts/${script.id}`);
                     }}
@@ -201,7 +231,7 @@ export default function Scripts() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       setDeleteId(script.id);
                     }}
@@ -216,7 +246,10 @@ export default function Scripts() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={() => setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>

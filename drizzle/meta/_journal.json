@@ -1,19 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1767525786934,
-      "tag": "0000_certain_lily_hollister",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1767527482058,
-      "tag": "0001_orange_mastermind",
+      "version": "7",
+      "when": 1783034644584,
+      "tag": "0000_init_postgres",
       "breakpoints": true
     }
   ]

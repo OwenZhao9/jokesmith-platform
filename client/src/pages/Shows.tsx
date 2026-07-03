@@ -1,12 +1,29 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import AuthRequiredCard from "@/components/AuthRequiredCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Calendar, Plus, Trash2, Edit, Loader2, MapPin, Clock, FileText, Check } from "lucide-react";
+import {
+  Calendar,
+  Plus,
+  Trash2,
+  Edit,
+  Loader2,
+  MapPin,
+  Clock,
+  FileText,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -63,11 +80,19 @@ export default function Shows() {
   const [showTime, setShowTime] = useState("");
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
-  const [status, setStatus] = useState<"planned" | "completed" | "cancelled">("planned");
+  const [status, setStatus] = useState<"planned" | "completed" | "cancelled">(
+    "planned"
+  );
   const [selectedScripts, setSelectedScripts] = useState<number[]>([]);
 
-  const { data: shows, isLoading, refetch } = trpc.shows.list.useQuery();
-  const { data: scripts } = trpc.scripts.list.useQuery({});
+  const {
+    data: shows,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = trpc.shows.list.useQuery(undefined, { retry: false });
+  const { data: scripts } = trpc.scripts.list.useQuery({}, { retry: false });
 
   const createMutation = trpc.shows.create.useMutation({
     onSuccess: () => {
@@ -76,7 +101,7 @@ export default function Shows() {
       resetForm();
       setDialogOpen(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("创建失败：" + error.message);
     },
   });
@@ -89,7 +114,7 @@ export default function Shows() {
       setDialogOpen(false);
       setEditingShow(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失败：" + error.message);
     },
   });
@@ -100,7 +125,7 @@ export default function Shows() {
       refetch();
       setDeleteId(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("删除失败：" + error.message);
     },
   });
@@ -171,9 +196,9 @@ export default function Shows() {
   };
 
   const toggleScript = (scriptId: number) => {
-    setSelectedScripts((prev) =>
+    setSelectedScripts(prev =>
       prev.includes(scriptId)
-        ? prev.filter((id) => id !== scriptId)
+        ? prev.filter(id => id !== scriptId)
         : [...prev, scriptId]
     );
   };
@@ -184,9 +209,9 @@ export default function Shows() {
   const groupedShows = useMemo(() => {
     if (!shows) return { planned: [], completed: [], cancelled: [] };
     return {
-      planned: shows.filter((s) => s.status === "planned"),
-      completed: shows.filter((s) => s.status === "completed"),
-      cancelled: shows.filter((s) => s.status === "cancelled"),
+      planned: shows.filter(s => s.status === "planned"),
+      completed: shows.filter(s => s.status === "completed"),
+      cancelled: shows.filter(s => s.status === "cancelled"),
     };
   }, [shows]);
 
@@ -206,7 +231,12 @@ export default function Shows() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <AuthRequiredCard
+          title="需要登录后查看演出排表"
+          description={error.message}
+        />
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -235,7 +265,7 @@ export default function Shows() {
                 计划中 ({groupedShows.planned.length})
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {groupedShows.planned.map((show) => (
+                {groupedShows.planned.map(show => (
                   <ShowCard
                     key={show.id}
                     show={show}
@@ -255,7 +285,7 @@ export default function Shows() {
                 已完成 ({groupedShows.completed.length})
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {groupedShows.completed.map((show) => (
+                {groupedShows.completed.map(show => (
                   <ShowCard
                     key={show.id}
                     show={show}
@@ -275,7 +305,7 @@ export default function Shows() {
                 已取消 ({groupedShows.cancelled.length})
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {groupedShows.cancelled.map((show) => (
+                {groupedShows.cancelled.map(show => (
                   <ShowCard
                     key={show.id}
                     show={show}
@@ -305,7 +335,7 @@ export default function Shows() {
                 id="title"
                 placeholder="例如：周末开放麦"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={e => setTitle(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -314,7 +344,7 @@ export default function Shows() {
                 id="venue"
                 placeholder="例如：笑果工厂"
                 value={venue}
-                onChange={(e) => setVenue(e.target.value)}
+                onChange={e => setVenue(e.target.value)}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -324,7 +354,7 @@ export default function Shows() {
                   id="date"
                   type="date"
                   value={showDate}
-                  onChange={(e) => setShowDate(e.target.value)}
+                  onChange={e => setShowDate(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -333,7 +363,7 @@ export default function Shows() {
                   id="time"
                   type="time"
                   value={showTime}
-                  onChange={(e) => setShowTime(e.target.value)}
+                  onChange={e => setShowTime(e.target.value)}
                 />
               </div>
             </div>
@@ -344,13 +374,16 @@ export default function Shows() {
                 type="number"
                 placeholder="例如：10"
                 value={duration}
-                onChange={(e) => setDuration(e.target.value)}
+                onChange={e => setDuration(e.target.value)}
               />
             </div>
             {editingShow && (
               <div className="space-y-2">
                 <Label>状态</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+                <Select
+                  value={status}
+                  onValueChange={v => setStatus(v as typeof status)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -368,7 +401,7 @@ export default function Shows() {
                 id="notes"
                 placeholder="添加备注..."
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 className="min-h-[80px]"
               />
             </div>
@@ -376,7 +409,7 @@ export default function Shows() {
               <div className="space-y-2">
                 <Label>关联稿件</Label>
                 <div className="border rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
-                  {scripts.map((script) => (
+                  {scripts.map(script => (
                     <div
                       key={script.id}
                       className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
@@ -412,7 +445,10 @@ export default function Shows() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={() => setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
@@ -471,7 +507,9 @@ function ShowCard({
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>
-              {format(new Date(show.showDate), "yyyy年MM月dd日 HH:mm", { locale: zhCN })}
+              {format(new Date(show.showDate), "yyyy年MM月dd日 HH:mm", {
+                locale: zhCN,
+              })}
             </span>
           </div>
           {show.venue && (

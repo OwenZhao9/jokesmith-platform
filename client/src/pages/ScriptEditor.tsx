@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import AuthRequiredCard from "@/components/AuthRequiredCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,7 +29,15 @@ const categories = [
   { value: "other", label: "其他" },
 ];
 
-type CategoryType = "politics" | "life" | "roast" | "relationship" | "work" | "family" | "tech" | "other";
+type CategoryType =
+  | "politics"
+  | "life"
+  | "roast"
+  | "relationship"
+  | "work"
+  | "family"
+  | "tech"
+  | "other";
 
 export default function ScriptEditor() {
   const [, setLocation] = useLocation();
@@ -41,9 +50,14 @@ export default function ScriptEditor() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
-  const { data: script, isLoading } = trpc.scripts.get.useQuery(
+  const {
+    data: script,
+    isLoading,
+    isError,
+    error,
+  } = trpc.scripts.get.useQuery(
     { id: Number(params.id) },
-    { enabled: !!isEditing }
+    { enabled: !!isEditing, retry: false }
   );
 
   const createMutation = trpc.scripts.create.useMutation({
@@ -51,7 +65,7 @@ export default function ScriptEditor() {
       toast.success("稿件创建成功");
       setLocation("/scripts");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("创建失败：" + error.message);
     },
   });
@@ -61,7 +75,7 @@ export default function ScriptEditor() {
       toast.success("稿件更新成功");
       setLocation("/scripts");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("更新失败：" + error.message);
     },
   });
@@ -83,7 +97,7 @@ export default function ScriptEditor() {
   };
 
   const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
+    setTags(tags.filter(t => t !== tag));
   };
 
   const handleSave = () => {
@@ -124,10 +138,23 @@ export default function ScriptEditor() {
     );
   }
 
+  if (isEditing && isError) {
+    return (
+      <AuthRequiredCard
+        title="需要登录后编辑稿件"
+        description={error.message}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/scripts")}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/scripts")}
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -135,7 +162,11 @@ export default function ScriptEditor() {
             {isEditing ? "编辑稿件" : "新建稿件"}
           </h1>
         </div>
-        <Button onClick={handleSave} disabled={isSaving} className="neon-box-pink">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="neon-box-pink"
+        >
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -163,7 +194,7 @@ export default function ScriptEditor() {
                   id="title"
                   placeholder="输入稿件标题"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={e => setTitle(e.target.value)}
                   className="bg-input"
                 />
               </div>
@@ -173,7 +204,7 @@ export default function ScriptEditor() {
                   id="content"
                   placeholder="在这里写下你的段子..."
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
+                  onChange={e => setContent(e.target.value)}
                   className="min-h-[400px] bg-input resize-none"
                 />
               </div>
@@ -189,12 +220,15 @@ export default function ScriptEditor() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>分类</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as CategoryType)}>
+                <Select
+                  value={category}
+                  onValueChange={v => setCategory(v as CategoryType)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {categories.map(cat => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
                       </SelectItem>
@@ -209,8 +243,8 @@ export default function ScriptEditor() {
                   <Input
                     placeholder="添加标签"
                     value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         handleAddTag();
@@ -224,7 +258,7 @@ export default function ScriptEditor() {
                 </div>
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {tags.map((tag) => (
+                    {tags.map(tag => (
                       <Badge key={tag} variant="secondary" className="gap-1">
                         {tag}
                         <X

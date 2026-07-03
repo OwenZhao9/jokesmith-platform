@@ -15,6 +15,8 @@ import Brainstorm from "./pages/Brainstorm";
 import Shows from "./pages/Shows";
 import Transcription from "./pages/Transcription";
 import Style from "./pages/Style";
+import Admin from "./pages/Admin";
+import Status from "./pages/Status";
 
 function Router() {
   return (
@@ -29,6 +31,8 @@ function Router() {
         <Route path="/shows" component={Shows} />
         <Route path="/transcription" component={Transcription} />
         <Route path="/style" component={Style} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/status" component={Status} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
@@ -39,7 +43,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
           <Router />

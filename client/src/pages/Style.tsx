@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import AuthRequiredCard from "@/components/AuthRequiredCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { User, Save, Loader2, X, Plus, Sparkles } from "lucide-react";
@@ -17,13 +24,18 @@ export default function Style() {
   const [tonePreference, setTonePreference] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
 
-  const { data: style, isLoading } = trpc.style.get.useQuery();
+  const {
+    data: style,
+    isLoading,
+    isError,
+    error,
+  } = trpc.style.get.useQuery(undefined, { retry: false });
 
   const updateMutation = trpc.style.update.useMutation({
     onSuccess: () => {
       toast.success("个人风格已保存");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("保存失败：" + error.message);
     },
   });
@@ -46,7 +58,7 @@ export default function Style() {
   };
 
   const handleRemoveTag = (tag: string) => {
-    setCommonTags(commonTags.filter((t) => t !== tag));
+    setCommonTags(commonTags.filter(t => t !== tag));
   };
 
   const handleSave = () => {
@@ -67,6 +79,15 @@ export default function Style() {
     );
   }
 
+  if (isError) {
+    return (
+      <AuthRequiredCard
+        title="需要登录后设置个人风格"
+        description={error.message}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -74,10 +95,16 @@ export default function Style() {
           <User className="h-8 w-8 text-primary mic-icon" />
           <div>
             <h1 className="text-2xl font-display neon-pink">个人风格</h1>
-            <p className="text-muted-foreground text-sm">设置你的喜剧风格，让 AI 更懂你</p>
+            <p className="text-muted-foreground text-sm">
+              设置你的喜剧风格，让 AI 更懂你
+            </p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={updateMutation.isPending} className="neon-box-pink">
+        <Button
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+          className="neon-box-pink"
+        >
           {updateMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -105,7 +132,7 @@ export default function Style() {
                 id="comedy-style"
                 placeholder="例如：擅长观察式幽默，喜欢从日常生活中发现荒诞；偏好自嘲式表达，善于用夸张手法放大小事..."
                 value={comedyStyle}
-                onChange={(e) => setComedyStyle(e.target.value)}
+                onChange={e => setComedyStyle(e.target.value)}
                 className="min-h-[120px] bg-input"
               />
             </div>
@@ -115,7 +142,7 @@ export default function Style() {
                 id="tone"
                 placeholder="例如：轻松幽默、犀利讽刺、温和自嘲..."
                 value={tonePreference}
-                onChange={(e) => setTonePreference(e.target.value)}
+                onChange={e => setTonePreference(e.target.value)}
                 className="bg-input"
               />
             </div>
@@ -134,7 +161,7 @@ export default function Style() {
                 id="language-habits"
                 placeholder="例如：喜欢用反问句；常说「你们知道吗」「说真的」；喜欢用比喻..."
                 value={languageHabits}
-                onChange={(e) => setLanguageHabits(e.target.value)}
+                onChange={e => setLanguageHabits(e.target.value)}
                 className="min-h-[120px] bg-input"
               />
             </div>
@@ -144,7 +171,7 @@ export default function Style() {
                 id="audience"
                 placeholder="例如：年轻白领、大学生、都市青年..."
                 value={targetAudience}
-                onChange={(e) => setTargetAudience(e.target.value)}
+                onChange={e => setTargetAudience(e.target.value)}
                 className="bg-input"
               />
             </div>
@@ -161,8 +188,8 @@ export default function Style() {
               <Input
                 placeholder="添加常用梗或标签"
                 value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={e => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     handleAddTag();
@@ -177,8 +204,12 @@ export default function Style() {
             </div>
             {commonTags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {commonTags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1 px-3 py-1">
+                {commonTags.map(tag => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="gap-1 px-3 py-1"
+                  >
                     {tag}
                     <X
                       className="h-3 w-3 cursor-pointer ml-1"
@@ -205,11 +236,13 @@ export default function Style() {
           <CardContent>
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>
-                设置好个人风格后，在「AI 写稿」页面可以开启「使用个人风格」开关。
-                AI 会根据你设置的喜剧风格、语言习惯和常用梗来生成更符合你个人特色的段子。
+                设置好个人风格后，在「AI
+                写稿」页面可以开启「使用个人风格」开关。 AI
+                会根据你设置的喜剧风格、语言习惯和常用梗来生成更符合你个人特色的段子。
               </p>
               <p>
-                建议尽可能详细地描述你的风格特点，这样 AI 生成的内容会更贴近你的表演风格。
+                建议尽可能详细地描述你的风格特点，这样 AI
+                生成的内容会更贴近你的表演风格。
               </p>
             </div>
           </CardContent>

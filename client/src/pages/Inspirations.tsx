@@ -1,12 +1,28 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import AuthRequiredCard from "@/components/AuthRequiredCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Lightbulb, Plus, Search, Trash2, FileText, Loader2, X, Check } from "lucide-react";
+import {
+  Lightbulb,
+  Plus,
+  Search,
+  Trash2,
+  FileText,
+  Loader2,
+  X,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -67,9 +83,20 @@ export default function Inspirations() {
   const [convertTitle, setConvertTitle] = useState("");
   const [convertCategory, setConvertCategory] = useState("other");
 
-  const { data: inspirations, isLoading, refetch } = trpc.inspirations.list.useQuery({
-    search: search || undefined,
-  });
+  const {
+    data: inspirations,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = trpc.inspirations.list.useQuery(
+    {
+      search: search || undefined,
+    },
+    {
+      retry: false,
+    }
+  );
 
   const createMutation = trpc.inspirations.create.useMutation({
     onSuccess: () => {
@@ -78,7 +105,7 @@ export default function Inspirations() {
       resetNewForm();
       setNewDialogOpen(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("记录失败：" + error.message);
     },
   });
@@ -89,7 +116,7 @@ export default function Inspirations() {
       refetch();
       setDeleteId(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("删除失败：" + error.message);
     },
   });
@@ -103,7 +130,7 @@ export default function Inspirations() {
       setConvertTitle("");
       setConvertCategory("other");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("转化失败：" + error.message);
     },
   });
@@ -143,7 +170,15 @@ export default function Inspirations() {
     convertMutation.mutate({
       id: selectedInspiration.id,
       title: convertTitle.trim(),
-      category: convertCategory as "politics" | "life" | "roast" | "relationship" | "work" | "family" | "tech" | "other",
+      category: convertCategory as
+        | "politics"
+        | "life"
+        | "roast"
+        | "relationship"
+        | "work"
+        | "family"
+        | "tech"
+        | "other",
     });
   };
 
@@ -160,10 +195,15 @@ export default function Inspirations() {
           <Lightbulb className="h-8 w-8 text-neon-yellow" />
           <div>
             <h1 className="text-2xl font-display neon-pink">灵感库</h1>
-            <p className="text-muted-foreground text-sm">记录你的碎片化想法和灵感</p>
+            <p className="text-muted-foreground text-sm">
+              记录你的碎片化想法和灵感
+            </p>
           </div>
         </div>
-        <Button onClick={() => setNewDialogOpen(true)} className="neon-box-pink">
+        <Button
+          onClick={() => setNewDialogOpen(true)}
+          className="neon-box-pink"
+        >
           <Plus className="mr-2 h-4 w-4" />
           记录灵感
         </Button>
@@ -175,13 +215,18 @@ export default function Inspirations() {
         <Input
           placeholder="搜索灵感..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           className="pl-9 bg-input"
         />
       </div>
 
       {/* Inspirations List */}
-      {isLoading ? (
+      {isError ? (
+        <AuthRequiredCard
+          title="需要登录后查看灵感库"
+          description={error.message}
+        />
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -206,7 +251,7 @@ export default function Inspirations() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {inspirations.map((inspiration) => (
+          {inspirations.map(inspiration => (
             <Card
               key={inspiration.id}
               className={`club-card ${inspiration.isConverted ? "opacity-60" : ""}`}
@@ -214,7 +259,11 @@ export default function Inspirations() {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <CardDescription className="text-xs">
-                    {format(new Date(inspiration.createdAt), "yyyy年MM月dd日 HH:mm", { locale: zhCN })}
+                    {format(
+                      new Date(inspiration.createdAt),
+                      "yyyy年MM月dd日 HH:mm",
+                      { locale: zhCN }
+                    )}
                   </CardDescription>
                   {inspiration.isConverted && (
                     <Badge variant="secondary" className="gap-1">
@@ -225,7 +274,9 @@ export default function Inspirations() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{inspiration.content}</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {inspiration.content}
+                </p>
                 {inspiration.source && (
                   <p className="text-xs text-muted-foreground mt-2">
                     来源：{inspiration.source}
@@ -233,7 +284,7 @@ export default function Inspirations() {
                 )}
                 {inspiration.tags && inspiration.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {inspiration.tags.map((tag) => (
+                    {inspiration.tags.map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -286,7 +337,7 @@ export default function Inspirations() {
                 id="new-content"
                 placeholder="写下你的灵感..."
                 value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
+                onChange={e => setNewContent(e.target.value)}
                 className="min-h-[120px]"
               />
             </div>
@@ -296,7 +347,7 @@ export default function Inspirations() {
                 id="new-source"
                 placeholder="例如：地铁上听到的对话"
                 value={newSource}
-                onChange={(e) => setNewSource(e.target.value)}
+                onChange={e => setNewSource(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -305,8 +356,8 @@ export default function Inspirations() {
                 <Input
                   placeholder="添加标签"
                   value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  onKeyDown={(e) => {
+                  onChange={e => setNewTagInput(e.target.value)}
+                  onKeyDown={e => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleAddTag();
@@ -319,12 +370,14 @@ export default function Inspirations() {
               </div>
               {newTags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {newTags.map((tag) => (
+                  {newTags.map(tag => (
                     <Badge key={tag} variant="secondary" className="gap-1">
                       {tag}
                       <X
                         className="h-3 w-3 cursor-pointer"
-                        onClick={() => setNewTags(newTags.filter((t) => t !== tag))}
+                        onClick={() =>
+                          setNewTags(newTags.filter(t => t !== tag))
+                        }
                       />
                     </Badge>
                   ))}
@@ -369,17 +422,20 @@ export default function Inspirations() {
                 id="convert-title"
                 placeholder="输入稿件标题"
                 value={convertTitle}
-                onChange={(e) => setConvertTitle(e.target.value)}
+                onChange={e => setConvertTitle(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>分类</Label>
-              <Select value={convertCategory} onValueChange={setConvertCategory}>
+              <Select
+                value={convertCategory}
+                onValueChange={setConvertCategory}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>
@@ -389,10 +445,16 @@ export default function Inspirations() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConvertDialogOpen(false)}
+            >
               取消
             </Button>
-            <Button onClick={handleConvert} disabled={convertMutation.isPending}>
+            <Button
+              onClick={handleConvert}
+              disabled={convertMutation.isPending}
+            >
               {convertMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -407,7 +469,10 @@ export default function Inspirations() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={() => setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>

@@ -3,13 +3,28 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Save, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+import AccessPasswordDialog from "@/components/AccessPasswordDialog";
+import {
+  clearStoredSupabaseAccessSession,
+  generateJokeWithSupabase,
+  getStoredSupabaseAccessSession,
+  isSupabaseBackendEnabled,
+  loginSupabaseAccess,
+  SupabaseAdminError,
+} from "@/lib/supabaseAdmin";
 import {
   Dialog,
   DialogContent,
@@ -43,18 +58,22 @@ export default function Home() {
   const [keywordInput, setKeywordInput] = useState("");
   const [usePersonalStyle, setUsePersonalStyle] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
-  
+  const [isSupabaseGenerating, setIsSupabaseGenerating] = useState(false);
+  const [accessDialogOpen, setAccessDialogOpen] = useState(false);
+  const [accessPassword, setAccessPassword] = useState("");
+  const [isAccessLoggingIn, setIsAccessLoggingIn] = useState(false);
+
   // Save dialog state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveTitle, setSaveTitle] = useState("");
   const [saveCategory, setSaveCategory] = useState("other");
 
   const generateMutation = trpc.ai.generateJoke.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setGeneratedContent(data.content);
       toast.success("段子生成成功！");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("生成失败：" + error.message);
     },
   });
@@ -66,23 +85,91 @@ export default function Home() {
       setSaveTitle("");
       setSaveCategory("other");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("保存失败：" + error.message);
     },
   });
 
-  const { data: userStyle } = trpc.style.get.useQuery();
+  const { data: user } = trpc.auth.me.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const { data: userStyle } = trpc.style.get.useQuery(undefined, {
+    enabled: Boolean(user),
+    retry: false,
+  });
+
+  const runSupabaseGenerate = () => {
+    setIsSupabaseGenerating(true);
+    generateJokeWithSupabase({
+      topic: topic.trim(),
+      keywords: keywords.length > 0 ? keywords : undefined,
+      usePersonalStyle,
+    })
+      .then(data => {
+        setGeneratedContent(data.content);
+        toast.success("段子生成成功！");
+      })
+      .catch(error => {
+        if (error instanceof SupabaseAdminError && error.status === 401) {
+          clearStoredSupabaseAccessSession();
+          setAccessDialogOpen(true);
+          toast.error("请先输入访问密码");
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "未知错误";
+        toast.error("生成失败：" + message);
+      })
+      .finally(() => {
+        setIsSupabaseGenerating(false);
+      });
+  };
 
   const handleGenerate = () => {
     if (!topic.trim()) {
       toast.error("请输入话题");
       return;
     }
+
+    if (isSupabaseBackendEnabled()) {
+      if (!getStoredSupabaseAccessSession()) {
+        setAccessDialogOpen(true);
+        return;
+      }
+
+      runSupabaseGenerate();
+      return;
+    }
+
     generateMutation.mutate({
       topic: topic.trim(),
       keywords: keywords.length > 0 ? keywords : undefined,
       usePersonalStyle,
     });
+  };
+
+  const handleAccessLogin = () => {
+    if (!accessPassword.trim()) {
+      toast.error("请输入访问密码");
+      return;
+    }
+
+    setIsAccessLoggingIn(true);
+    loginSupabaseAccess(accessPassword.trim())
+      .then(() => {
+        toast.success("访问验证通过");
+        setAccessPassword("");
+        setAccessDialogOpen(false);
+        runSupabaseGenerate();
+      })
+      .catch(error => {
+        const message = error instanceof Error ? error.message : "未知错误";
+        toast.error("验证失败：" + message);
+      })
+      .finally(() => {
+        setIsAccessLoggingIn(false);
+      });
   };
 
   const handleAddKeyword = () => {
@@ -93,7 +180,7 @@ export default function Home() {
   };
 
   const handleRemoveKeyword = (keyword: string) => {
-    setKeywords(keywords.filter((k) => k !== keyword));
+    setKeywords(keywords.filter(k => k !== keyword));
   };
 
   const handleSaveScript = () => {
@@ -104,12 +191,25 @@ export default function Home() {
     createScriptMutation.mutate({
       title: saveTitle.trim(),
       content: generatedContent,
-      category: saveCategory as "politics" | "life" | "roast" | "relationship" | "work" | "family" | "tech" | "other",
+      category: saveCategory as
+        | "politics"
+        | "life"
+        | "roast"
+        | "relationship"
+        | "work"
+        | "family"
+        | "tech"
+        | "other",
       tags: keywords,
     });
   };
 
-  const hasStyle = userStyle && (userStyle.comedyStyle || userStyle.languageHabits || (userStyle.commonTags && userStyle.commonTags.length > 0));
+  const hasStyle =
+    userStyle &&
+    (userStyle.comedyStyle ||
+      userStyle.languageHabits ||
+      (userStyle.commonTags && userStyle.commonTags.length > 0));
+  const isGenerating = generateMutation.isPending || isSupabaseGenerating;
 
   return (
     <div className="space-y-6">
@@ -117,7 +217,9 @@ export default function Home() {
         <Sparkles className="h-8 w-8 text-primary mic-icon" />
         <div>
           <h1 className="text-2xl font-display neon-pink">AI 写稿助手</h1>
-          <p className="text-muted-foreground text-sm">输入话题，让 AI 帮你创作脱口秀段子</p>
+          <p className="text-muted-foreground text-sm">
+            输入话题，让 AI 帮你创作脱口秀段子
+          </p>
         </div>
       </div>
 
@@ -135,7 +237,7 @@ export default function Home() {
                 id="topic"
                 placeholder="例如：相亲、加班、养猫..."
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={e => setTopic(e.target.value)}
                 className="bg-input"
               />
             </div>
@@ -146,8 +248,8 @@ export default function Home() {
                 <Input
                   placeholder="添加关键词"
                   value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyDown={(e) => {
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onKeyDown={e => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleAddKeyword();
@@ -155,13 +257,17 @@ export default function Home() {
                   }}
                   className="bg-input"
                 />
-                <Button variant="outline" size="icon" onClick={handleAddKeyword}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddKeyword}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               {keywords.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {keywords.map((keyword) => (
+                  {keywords.map(keyword => (
                     <Badge key={keyword} variant="secondary" className="gap-1">
                       {keyword}
                       <X
@@ -176,9 +282,13 @@ export default function Home() {
 
             <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-muted/30">
               <div className="space-y-0.5">
-                <Label htmlFor="personal-style" className="cursor-pointer">使用个人风格</Label>
+                <Label htmlFor="personal-style" className="cursor-pointer">
+                  使用个人风格
+                </Label>
                 <p className="text-xs text-muted-foreground">
-                  {hasStyle ? "根据你设置的喜剧风格生成" : "请先在「个人风格」页面设置你的风格"}
+                  {hasStyle
+                    ? "根据你设置的喜剧风格生成"
+                    : "请先在「个人风格」页面设置你的风格"}
                 </p>
               </div>
               <Switch
@@ -192,9 +302,9 @@ export default function Home() {
             <Button
               className="w-full neon-box-pink"
               onClick={handleGenerate}
-              disabled={generateMutation.isPending || !topic.trim()}
+              disabled={isGenerating || !topic.trim()}
             >
-              {generateMutation.isPending ? (
+              {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   生成中...
@@ -232,7 +342,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             {generatedContent ? (
-              <div className="prose prose-invert max-w-none">
+              <div className="prose max-w-none">
                 <Streamdown>{generatedContent}</Streamdown>
               </div>
             ) : (
@@ -244,6 +354,15 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+
+      <AccessPasswordDialog
+        open={accessDialogOpen}
+        password={accessPassword}
+        isSubmitting={isAccessLoggingIn}
+        onOpenChange={setAccessDialogOpen}
+        onPasswordChange={setAccessPassword}
+        onSubmit={handleAccessLogin}
+      />
 
       {/* Save Dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
@@ -259,7 +378,7 @@ export default function Home() {
                 id="save-title"
                 placeholder="输入稿件标题"
                 value={saveTitle}
-                onChange={(e) => setSaveTitle(e.target.value)}
+                onChange={e => setSaveTitle(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -269,7 +388,7 @@ export default function Home() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>
@@ -282,7 +401,10 @@ export default function Home() {
             <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
               取消
             </Button>
-            <Button onClick={handleSaveScript} disabled={createScriptMutation.isPending}>
+            <Button
+              onClick={handleSaveScript}
+              disabled={createScriptMutation.isPending}
+            >
               {createScriptMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

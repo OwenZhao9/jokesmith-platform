@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import * as db from "../db";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -19,7 +20,12 @@ export type FileContent = {
   type: "file_url";
   file_url: {
     url: string;
-    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4" ;
+    mime_type?:
+      | "audio/mpeg"
+      | "audio/wav"
+      | "application/pdf"
+      | "audio/mp4"
+      | "video/mp4";
   };
 };
 
@@ -66,6 +72,10 @@ export type InvokeParams = {
   output_schema?: OutputSchema;
   responseFormat?: ResponseFormat;
   response_format?: ResponseFormat;
+  usage?: {
+    feature: string;
+    userId?: number | null;
+  };
 };
 
 export type ToolCall = {
@@ -214,10 +224,15 @@ const resolveApiUrl = () =>
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://api.deepseek.com/v1/chat/completions";
 
+const resolveProvider = () =>
+  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0 ? "forge" : "deepseek";
+
 const assertApiKey = () => {
   if (!ENV.forgeApiKey) {
-    console.error("[LLM] API Key check failed. ENV.forgeApiKey is:", ENV.forgeApiKey);
-    throw new Error("API_KEY is not configured. Please set BUILT_IN_FORGE_API_KEY in your .env file");
+    console.error("[LLM] API Key check failed: BUILT_IN_FORGE_API_KEY is missing");
+    throw new Error(
+      "API_KEY is not configured. Please set BUILT_IN_FORGE_API_KEY in your .env file"
+    );
   }
   console.log("[LLM] API Key configured, length:", ENV.forgeApiKey.length);
 };
@@ -268,7 +283,7 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  const startedAt = Date.now();
 
   const {
     messages,
@@ -279,56 +294,61 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     output_schema,
     responseFormat,
     response_format,
+    usage,
   } = params;
 
-  const payload: Record<string, unknown> = {
-    model: "deepseek-chat",
-    messages: messages.map(normalizeMessage),
-  };
-
-  if (tools && tools.length > 0) {
-    payload.tools = tools;
-  }
-
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
-  if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
-  }
-
-  payload.max_tokens = 8192
-
-  const normalizedResponseFormat = normalizeResponseFormat({
-    responseFormat,
-    response_format,
-    outputSchema,
-    output_schema,
-  });
-
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
-  }
-
-  const apiUrl = resolveApiUrl();
-  const requestBody = JSON.stringify(payload);
-  
-  console.log("[LLM] Request URL:", apiUrl);
-  console.log("[LLM] Request payload:", JSON.stringify(payload, null, 2));
-
   try {
+    assertApiKey();
+
+    const payload: Record<string, unknown> = {
+      model: "deepseek-chat",
+      messages: messages.map(normalizeMessage),
+    };
+
+    if (tools && tools.length > 0) {
+      payload.tools = tools;
+    }
+
+    const normalizedToolChoice = normalizeToolChoice(
+      toolChoice || tool_choice,
+      tools
+    );
+    if (normalizedToolChoice) {
+      payload.tool_choice = normalizedToolChoice;
+    }
+
+    payload.max_tokens = 8192;
+
+    const normalizedResponseFormat = normalizeResponseFormat({
+      responseFormat,
+      response_format,
+      outputSchema,
+      output_schema,
+    });
+
+    if (normalizedResponseFormat) {
+      payload.response_format = normalizedResponseFormat;
+    }
+
+    const apiUrl = resolveApiUrl();
+    const requestBody = JSON.stringify(payload);
+
+    console.log("[LLM] Request URL:", apiUrl);
+    console.log("[LLM] Request payload:", JSON.stringify(payload, null, 2));
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${ENV.forgeApiKey}`,
+        Authorization: `Bearer ${ENV.forgeApiKey}`,
       },
       body: requestBody,
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unable to read error response");
+      const errorText = await response
+        .text()
+        .catch(() => "Unable to read error response");
       console.error("[LLM] Request failed:", {
         status: response.status,
         statusText: response.statusText,
@@ -339,10 +359,31 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       );
     }
 
-    const result = await response.json() as InvokeResult;
+    const result = (await response.json()) as InvokeResult;
+    await db.recordApiUsage({
+      userId: usage?.userId ?? null,
+      feature: usage?.feature ?? "llm.invoke",
+      provider: resolveProvider(),
+      model: result.model || "deepseek-chat",
+      promptTokens: result.usage?.prompt_tokens ?? 0,
+      completionTokens: result.usage?.completion_tokens ?? 0,
+      totalTokens: result.usage?.total_tokens ?? 0,
+      status: "success",
+      latencyMs: Date.now() - startedAt,
+    });
     console.log("[LLM] Request successful");
     return result;
   } catch (error) {
+    await db.recordApiUsage({
+      userId: usage?.userId ?? null,
+      feature: usage?.feature ?? "llm.invoke",
+      provider: resolveProvider(),
+      model: "deepseek-chat",
+      status: "error",
+      errorMessage: error instanceof Error ? error.message : String(error),
+      latencyMs: Date.now() - startedAt,
+    });
+
     if (error instanceof Error) {
       console.error("[LLM] Fetch error:", error.message);
       throw new Error(`Failed to fetch from LLM API: ${error.message}`);
