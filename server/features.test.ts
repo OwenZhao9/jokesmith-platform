@@ -180,10 +180,27 @@ describe("ai router", () => {
 
     await expect(
       caller.ai.generateJoke({
-        topic: "加班",
         usePersonalStyle: false,
+        preInterview: {
+          事件1经过: "下班前被通知今晚必须加班。",
+        },
       })
     ).rejects.toThrow();
+  });
+
+  it("rejects generation when only private pre-interview fields are provided", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.ai.generateJoke({
+        usePersonalStyle: false,
+        preInterview: {
+          联系方式: "private@example.com",
+          确认授权: "仅供内部测试",
+        },
+      })
+    ).rejects.toThrow("请至少填写一项会发送给 AI 的前采素材");
   });
 });
 

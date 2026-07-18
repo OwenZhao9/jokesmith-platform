@@ -65,15 +65,12 @@ export type SupabaseApiUsageLog = {
 };
 
 export type SupabaseGenerateJokeInput = {
-  topic: string;
-  keywords?: string[];
   usePersonalStyle?: boolean;
-  preInterview?: Record<string, string>;
+  preInterview: Record<string, string>;
 };
 
 export type SupabaseGenerateJokeResult = {
   content: string;
-  topic: string;
   usedPersonalStyle: boolean;
 };
 

@@ -21,7 +21,10 @@ import { invokeLLM } from "./_core/llm";
 import { buildJokePrompt, JOKE_SYSTEM_PROMPT } from "./_core/jokePrompt";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import * as db from "./db";
-import { preInterviewFieldLabels } from "@shared/preInterview";
+import {
+  preInterviewFieldLabels,
+  toPromptReadyPreInterview,
+} from "@shared/preInterview";
 
 // Category enum for validation
 const categoryEnum = z.enum([
@@ -57,6 +60,13 @@ const preInterviewAnswersInput = z
       ctx.addIssue({
         code: "custom",
         message: "前采素材过长，请精简到 24000 字以内",
+      });
+    }
+
+    if (Object.keys(toPromptReadyPreInterview(answers)).length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "请至少填写一项会发送给 AI 的前采素材",
       });
     }
   });
@@ -560,13 +570,8 @@ export const appRouter = router({
     generateJoke: protectedProcedure
       .input(
         z.object({
-          topic: z.string().trim().min(1).max(200),
-          keywords: z
-            .array(z.string().trim().min(1).max(40))
-            .max(12)
-            .optional(),
           usePersonalStyle: z.boolean().default(false),
-          preInterview: preInterviewAnswersInput.optional(),
+          preInterview: preInterviewAnswersInput,
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -589,8 +594,6 @@ export const appRouter = router({
         }
 
         const prompt = buildJokePrompt({
-          topic: input.topic,
-          keywords: input.keywords,
           preInterview: input.preInterview,
           personalStyle,
         });
@@ -614,7 +617,6 @@ export const appRouter = router({
 
         return {
           content: contentText,
-          topic: input.topic,
           usedPersonalStyle: input.usePersonalStyle,
         };
       }),

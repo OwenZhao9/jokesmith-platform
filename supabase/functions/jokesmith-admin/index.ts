@@ -685,8 +685,6 @@ function parsePreInterview(value: unknown) {
 }
 
 function buildSupabaseJokePrompt(input: {
-  topic: string;
-  keywords: string[];
   preInterview: Record<string, string>;
 }) {
   const materialLines = Object.entries(input.preInterview).map(
@@ -697,11 +695,16 @@ function buildSupabaseJokePrompt(input: {
       ? `<front_material>\n${materialLines.join("\n")}\n</front_material>`
       : "<front_material>用户没有补充前采素材。</front_material>";
   const targetDuration = input.preInterview["目标时长"] || "约 3 分钟";
+  const creativeFocus =
+    input.preInterview["最想讲的主题1"] ||
+    input.preInterview["给写稿人/AI的摘要"] ||
+    input.preInterview["稿子目标"] ||
+    input.preInterview["事件1标题"] ||
+    "请从前采中选择最具体、最有反差的素材作为主线";
 
   return `请把以下前采素材写成一篇可直接排练的中文单口喜剧稿。
 
-主话题：${input.topic}
-关键词：${input.keywords.length > 0 ? input.keywords.join("、") : "无指定关键词"}
+根据前采提炼的创作重点：${creativeFocus}
 目标时长：${targetDuration}
 
 ${material}
@@ -728,17 +731,10 @@ ${material}
 
 async function generateJoke(req: Request) {
   const input = await req.json().catch(() => ({}));
-  const topic = String(input.topic || "").trim();
-  if (!topic) throw new HttpError("topic is required", 400);
-  if (topic.length > 200) throw new HttpError("topic is too long", 400);
-
-  const keywords = Array.isArray(input.keywords)
-    ? input.keywords
-        .map((item: unknown) => String(item).trim().slice(0, 40))
-        .filter(Boolean)
-        .slice(0, 12)
-    : [];
   const preInterview = parsePreInterview(input.preInterview);
+  if (Object.keys(preInterview).length === 0) {
+    throw new HttpError("pre-interview material is required", 400);
+  }
 
   const result = await invokeChatCompletion({
     feature: "ai.generateJoke",
@@ -749,14 +745,13 @@ async function generateJoke(req: Request) {
       },
       {
         role: "user",
-        content: buildSupabaseJokePrompt({ topic, keywords, preInterview }),
+        content: buildSupabaseJokePrompt({ preInterview }),
       },
     ],
   });
 
   return {
     content: getTextContent(result),
-    topic,
     usedPersonalStyle: false,
   };
 }

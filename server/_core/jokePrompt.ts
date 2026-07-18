@@ -16,8 +16,6 @@ export const JOKE_SYSTEM_PROMPT = `你是一位资深中文单口喜剧总编剧
 先在内部完成素材筛选、喜剧视角、升级路径和回扣设计，不要展示思考过程。`;
 
 type BuildJokePromptInput = {
-  topic: string;
-  keywords?: string[];
   preInterview?: PreInterviewAnswers;
   personalStyle?: string[];
 };
@@ -45,16 +43,17 @@ const buildPreInterviewMaterial = (answers?: PreInterviewAnswers) => {
 };
 
 export const buildJokePrompt = ({
-  topic,
-  keywords,
   preInterview,
   personalStyle,
 }: BuildJokePromptInput) => {
-  const cleanKeywords =
-    keywords?.map(item => item.trim()).filter(Boolean) ?? [];
-  const targetDuration = preInterview?.["目标时长"]?.trim() || "约 3 分钟";
-  const keywordBlock =
-    cleanKeywords.length > 0 ? cleanKeywords.join("、") : "无指定关键词";
+  const promptReadyAnswers = toPromptReadyPreInterview(preInterview);
+  const targetDuration = promptReadyAnswers["目标时长"] || "约 3 分钟";
+  const creativeFocus =
+    promptReadyAnswers["最想讲的主题1"] ||
+    promptReadyAnswers["给写稿人/AI的摘要"] ||
+    promptReadyAnswers["稿子目标"] ||
+    promptReadyAnswers["事件1标题"] ||
+    "请从前采中选择最具体、最有反差的素材作为主线";
   const styleBlock =
     personalStyle && personalStyle.length > 0
       ? personalStyle.map(item => `- ${item}`).join("\n")
@@ -62,8 +61,7 @@ export const buildJokePrompt = ({
 
   return `请把以下前采素材写成一篇可直接排练的中文单口喜剧稿。
 
-主话题：${topic}
-关键词：${keywordBlock}
+根据前采提炼的创作重点：${creativeFocus}
 目标时长：${targetDuration}
 
 个人风格设置：
