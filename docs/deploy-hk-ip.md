@@ -19,6 +19,8 @@
 export DB_PASSWORD='CHANGE_ME_STRONG_DB_PASSWORD'
 export ADMIN_PASSWORD='CHANGE_ME_STRONG_ADMIN_PASSWORD'
 export JWT_SECRET='CHANGE_ME_RANDOM_32_CHARS_OR_LONGER'
+export BUILT_IN_FORGE_API_URL='https://api.deepseek.com'
+export BUILT_IN_FORGE_API_KEY='CHANGE_ME_DEEPSEEK_API_KEY'
 curl -fsSL https://raw.githubusercontent.com/OwenZhao9/jokesmith-platform/main/scripts/hk-vps-bootstrap.sh | sudo -E bash
 ```
 
@@ -29,6 +31,8 @@ export DOMAIN='your-domain.com'
 export DB_PASSWORD='CHANGE_ME_STRONG_DB_PASSWORD'
 export ADMIN_PASSWORD='CHANGE_ME_STRONG_ADMIN_PASSWORD'
 export JWT_SECRET='CHANGE_ME_RANDOM_32_CHARS_OR_LONGER'
+export BUILT_IN_FORGE_API_URL='https://api.deepseek.com'
+export BUILT_IN_FORGE_API_KEY='CHANGE_ME_DEEPSEEK_API_KEY'
 curl -fsSL https://raw.githubusercontent.com/OwenZhao9/jokesmith-platform/main/scripts/hk-vps-bootstrap.sh | sudo -E bash
 ```
 
@@ -118,7 +122,7 @@ ADMIN_PASSWORD=CHANGE_ME_ADMIN_PASSWORD
 AI 生成功能需要：
 
 ```bash
-BUILT_IN_FORGE_API_URL=https://forge.manus.im
+BUILT_IN_FORGE_API_URL=https://api.deepseek.com
 BUILT_IN_FORGE_API_KEY=CHANGE_ME
 ```
 

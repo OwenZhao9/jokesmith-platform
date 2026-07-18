@@ -7,6 +7,7 @@ APP_PORT="${APP_PORT:-3000}"
 DOMAIN="${DOMAIN:-_}"
 DB_NAME="${DB_NAME:-jokesmith}"
 DB_USER="${DB_USER:-jokesmith}"
+BUILT_IN_FORGE_API_URL="${BUILT_IN_FORGE_API_URL:-https://api.deepseek.com}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this script with sudo or as root." >&2
@@ -70,8 +71,14 @@ PORT=${APP_PORT}
 DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}
 JWT_SECRET=${JWT_SECRET}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
-BUILT_IN_FORGE_API_URL=https://forge.manus.im
+BUILT_IN_FORGE_API_URL=${BUILT_IN_FORGE_API_URL}
 ENV
+
+if [[ -n "${BUILT_IN_FORGE_API_KEY:-}" ]]; then
+  cat >> "$PROJECT_DIR/.env" <<ENV
+BUILT_IN_FORGE_API_KEY=${BUILT_IN_FORGE_API_KEY}
+ENV
+fi
 
 chmod 600 "$PROJECT_DIR/.env"
 chown "${SUDO_USER:-root}:${SUDO_USER:-root}" "$PROJECT_DIR/.env"
