@@ -5,9 +5,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import { lazy, Suspense } from "react";
+import Home from "./pages/Home";
 
 // Pages
-const Home = lazy(() => import("./pages/Home"));
 const Scripts = lazy(() => import("./pages/Scripts"));
 const ScriptEditor = lazy(() => import("./pages/ScriptEditor"));
 const Inspirations = lazy(() => import("./pages/Inspirations"));
