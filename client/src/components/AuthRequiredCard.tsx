@@ -10,11 +10,13 @@ import { useState } from "react";
 type AuthRequiredCardProps = {
   title: string;
   description?: string;
+  allowAdminLogin?: boolean;
 };
 
 export default function AuthRequiredCard({
   title,
   description = "登录后可以查看和管理你的个人内容。",
+  allowAdminLogin = false,
 }: AuthRequiredCardProps) {
   const [loginUrl] = useState(() =>
     typeof window === "undefined" ? "#" : getLoginUrl()
@@ -45,38 +47,40 @@ export default function AuthRequiredCard({
         <Lock className="mb-4 h-12 w-12 text-muted-foreground/30" />
         <p className="font-medium">{title}</p>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          {canLogin ? description : "当前环境未配置 OAuth 登录入口。"}
+          {description}
         </p>
         {canLogin && (
           <Button
             className="mt-4"
             onClick={() => (window.location.href = loginUrl)}
           >
-            去登录
+            去登录 / 注册
           </Button>
         )}
-        <form
-          className="mt-6 flex w-full max-w-sm flex-col gap-3"
-          onSubmit={handleAdminLogin}
-        >
-          <Input
-            type="password"
-            value={password}
-            onChange={event => setPassword(event.target.value)}
-            placeholder="管理员密码"
-            autoComplete="current-password"
-          />
-          <Button
-            type="submit"
-            variant={canLogin ? "outline" : "default"}
-            disabled={adminLogin.isPending || !password}
+        {allowAdminLogin && (
+          <form
+            className="mt-6 flex w-full max-w-sm flex-col gap-3"
+            onSubmit={handleAdminLogin}
           >
-            {adminLogin.isPending ? "登录中..." : "管理员密码登录"}
-          </Button>
-          {adminLoginError && (
-            <p className="text-xs text-destructive">{adminLoginError}</p>
-          )}
-        </form>
+            <Input
+              type="password"
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+              placeholder="管理员密码"
+              autoComplete="current-password"
+            />
+            <Button
+              type="submit"
+              variant={canLogin ? "outline" : "default"}
+              disabled={adminLogin.isPending || !password}
+            >
+              {adminLogin.isPending ? "登录中..." : "管理员密码登录"}
+            </Button>
+            {adminLoginError && (
+              <p className="text-xs text-destructive">{adminLoginError}</p>
+            )}
+          </form>
+        )}
       </CardContent>
     </Card>
   );

@@ -17,6 +17,7 @@ import Transcription from "./pages/Transcription";
 import Style from "./pages/Style";
 import Admin from "./pages/Admin";
 import Status from "./pages/Status";
+import Login from "./pages/Login";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/style" component={Style} />
         <Route path="/admin" component={Admin} />
         <Route path="/status" component={Status} />
+        <Route path="/login" component={Login} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

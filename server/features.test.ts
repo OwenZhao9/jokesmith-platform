@@ -9,6 +9,7 @@ function createAuthContext(): { ctx: TrpcContext } {
     id: 1,
     openId: "test-user-123",
     email: "test@example.com",
+    passwordHash: "scrypt:v1:salt:hash",
     name: "Test User",
     loginMethod: "manus",
     role: "user",
@@ -56,6 +57,7 @@ describe("auth.me", () => {
     expect(result).toBeDefined();
     expect(result?.openId).toBe("test-user-123");
     expect(result?.email).toBe("test@example.com");
+    expect(result).not.toHaveProperty("passwordHash");
   });
 
   it("returns null when not authenticated", async () => {

@@ -1,6 +1,13 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import type { User } from "../drizzle/schema";
+import { createHash } from "node:crypto";
 import { clearSessionCookie, serializeSessionCookie } from "./_core/cookies";
 import { ENV } from "./_core/env";
+import {
+  hashPassword,
+  normalizeEmail,
+  verifyPassword,
+} from "./_core/passwordAuth";
 import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import {
@@ -27,6 +34,49 @@ const categoryEnum = z.enum([
 ]);
 const showStatusEnum = z.enum(["planned", "completed", "cancelled"]);
 
+const passwordAuthInput = z.object({
+  email: z.string().email().max(320),
+  password: z.string().min(6).max(128),
+});
+
+const passwordRegisterInput = passwordAuthInput.extend({
+  name: z.string().max(80).optional(),
+});
+
+const createPasswordOpenId = (email: string) =>
+  `credential:${createHash("sha256").update(email).digest("hex").slice(0, 48)}`;
+
+const createSession = async (
+  ctx: { req: Parameters<typeof serializeSessionCookie>[0]; res: unknown },
+  openId: string,
+  name: string
+) => {
+  const sessionToken = await sdk.createSessionToken(openId, {
+    name,
+    expiresInMs: ONE_YEAR_MS,
+  });
+
+  const cookieResponse = ctx.res as unknown as {
+    setHeader(name: string, value: string | string[]): void;
+  };
+  cookieResponse.setHeader(
+    "Set-Cookie",
+    serializeSessionCookie(ctx.req, COOKIE_NAME, sessionToken, ONE_YEAR_MS)
+  );
+};
+
+const toPublicUser = (user: User) => ({
+  id: user.id,
+  openId: user.openId,
+  name: user.name,
+  email: user.email,
+  loginMethod: user.loginMethod,
+  role: user.role,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+  lastSignedIn: user.lastSignedIn,
+});
+
 export const appRouter = router({
   system: systemRouter,
 
@@ -50,7 +100,59 @@ export const appRouter = router({
   }),
 
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts =>
+      opts.ctx.user ? toPublicUser(opts.ctx.user) : null
+    ),
+    register: publicProcedure
+      .input(passwordRegisterInput)
+      .mutation(async ({ ctx, input }) => {
+        const email = normalizeEmail(input.email);
+        const existingUser = await db.getUserByEmail(email);
+        if (existingUser) {
+          throw new Error("该邮箱已注册，请直接登录");
+        }
+
+        const name = input.name?.trim() || email.split("@")[0];
+        const openId = createPasswordOpenId(email);
+        await db.upsertUser({
+          openId,
+          email,
+          name,
+          passwordHash: await hashPassword(input.password),
+          loginMethod: "password",
+          role: "user",
+          lastSignedIn: new Date(),
+        });
+
+        await createSession(ctx, openId, name);
+        return { success: true } as const;
+      }),
+    passwordLogin: publicProcedure
+      .input(passwordAuthInput)
+      .mutation(async ({ ctx, input }) => {
+        const email = normalizeEmail(input.email);
+        const user = await db.getUserByEmail(email);
+        if (!user?.passwordHash) {
+          throw new Error("邮箱或密码错误");
+        }
+
+        const passwordMatches = await verifyPassword(
+          input.password,
+          user.passwordHash
+        );
+        if (!passwordMatches) {
+          throw new Error("邮箱或密码错误");
+        }
+
+        const signedInAt = new Date();
+        await db.upsertUser({
+          openId: user.openId,
+          lastSignedIn: signedInAt,
+        });
+
+        await createSession(ctx, user.openId, user.name || user.email || "User");
+        return { success: true } as const;
+      }),
     adminLogin: publicProcedure
       .input(z.object({ password: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
@@ -70,18 +172,7 @@ export const appRouter = router({
           lastSignedIn: new Date(),
         });
 
-        const sessionToken = await sdk.createSessionToken(openId, {
-          name: "Admin",
-          expiresInMs: ONE_YEAR_MS,
-        });
-
-        const cookieResponse = ctx.res as unknown as {
-          setHeader(name: string, value: string | string[]): void;
-        };
-        cookieResponse.setHeader(
-          "Set-Cookie",
-          serializeSessionCookie(ctx.req, COOKIE_NAME, sessionToken, ONE_YEAR_MS)
-        );
+        await createSession(ctx, openId, "Admin");
 
         return { success: true } as const;
       }),

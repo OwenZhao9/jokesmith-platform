@@ -1,6 +1,7 @@
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Mic,
   FileText,
@@ -24,6 +26,8 @@ import {
   PanelLeft,
   ShieldCheck,
   Activity,
+  LogIn,
+  LogOut,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -89,7 +93,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const menuItems =
     user?.role === "admin" ? [...baseMenuItems, adminMenuItem] : baseMenuItems;
   const activeMenuItem = menuItems.find(item => item.path === location);
@@ -130,6 +134,11 @@ function DashboardLayoutContent({
       document.body.style.userSelect = "";
     };
   }, [isResizing, setSidebarWidth]);
+
+  const handleLogout = async () => {
+    await logout();
+    setLocation("/login");
+  };
 
   return (
     <>
@@ -183,6 +192,44 @@ function DashboardLayoutContent({
               })}
             </SidebarMenu>
           </SidebarContent>
+
+          <SidebarFooter className="border-t border-border/30">
+            {user ? (
+              <div className="space-y-2">
+                {!isCollapsed && (
+                  <div className="min-w-0 px-2">
+                    <p className="truncate text-sm font-medium">
+                      {user.name || user.email || "已登录用户"}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {user.role === "admin" ? "管理员" : user.email}
+                    </p>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size={isCollapsed ? "icon" : "sm"}
+                  className="w-full justify-start"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {!isCollapsed && <span>退出登录</span>}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size={isCollapsed ? "icon" : "sm"}
+                className="w-full justify-start"
+                onClick={() => setLocation("/login")}
+              >
+                <LogIn className="h-4 w-4" />
+                {!isCollapsed && <span>登录 / 注册</span>}
+              </Button>
+            )}
+          </SidebarFooter>
         </Sidebar>
         <div
           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}

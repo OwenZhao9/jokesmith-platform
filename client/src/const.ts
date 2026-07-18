@@ -8,13 +8,11 @@ export const getLoginUrl = () => {
   const appId = import.meta.env.VITE_APP_ID;
   
   if (!oauthPortalUrl) {
-    console.warn("[OAuth] VITE_OAUTH_PORTAL_URL is not configured. OAuth login will not work.");
-    return "#";
+    return "/login";
   }
   
   if (!appId) {
-    console.warn("[OAuth] VITE_APP_ID is not configured. OAuth login will not work.");
-    return "#";
+    return "/login";
   }
   
   const apiOrigin = API_BASE_URL || window.location.origin;

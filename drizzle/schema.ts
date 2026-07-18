@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -40,19 +41,24 @@ export const apiUsageStatus = pgEnum("api_usage_status", [
 /**
  * Core user table backing auth flow.
  */
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: userRole("role").default("user").notNull(),
-  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn", { mode: "date" })
-    .defaultNow()
-    .notNull(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: serial("id").primaryKey(),
+    openId: varchar("openId", { length: 64 }).notNull().unique(),
+    name: text("name"),
+    email: varchar("email", { length: 320 }),
+    passwordHash: text("passwordHash"),
+    loginMethod: varchar("loginMethod", { length: 64 }),
+    role: userRole("role").default("user").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).defaultNow().notNull(),
+    lastSignedIn: timestamp("lastSignedIn", { mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  table => [uniqueIndex("users_email_unique").on(table.email)]
+);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

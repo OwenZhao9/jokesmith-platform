@@ -82,6 +82,7 @@ function TrpcAdmin() {
     return (
       <AuthRequiredCard
         title="需要管理员权限"
+        allowAdminLogin
         description={
           overviewErrorData?.message ||
           usageErrorData?.message ||
