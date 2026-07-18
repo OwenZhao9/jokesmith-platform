@@ -10,7 +10,48 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <style>
+        .boot-screen {
+          min-height: 100vh;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 20% 10%, rgba(255, 196, 87, 0.22), transparent 28rem),
+            linear-gradient(135deg, #fff9ee 0%, #f7efe2 52%, #edf7f2 100%);
+          color: #1f2933;
+          font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+        }
+
+        .boot-card {
+          width: min(88vw, 420px);
+          border: 1px solid rgba(31, 41, 51, 0.12);
+          border-radius: 28px;
+          padding: 32px;
+          background: rgba(255, 255, 255, 0.72);
+          box-shadow: 0 24px 80px rgba(71, 55, 32, 0.12);
+          text-align: center;
+        }
+
+        .boot-title {
+          margin: 0;
+          font-size: 32px;
+          letter-spacing: -0.04em;
+        }
+
+        .boot-text {
+          margin: 12px 0 0;
+          color: #667085;
+          font-size: 14px;
+        }
+      </style>
+      <div class="boot-screen">
+        <div class="boot-card">
+          <h1 class="boot-title">JokeSmith</h1>
+          <p class="boot-text">正在加载脱口秀写稿平台...</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

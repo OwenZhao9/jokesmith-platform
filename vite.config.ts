@@ -6,8 +6,13 @@ import path from "path";
 import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
+const isProduction = process.env.NODE_ENV === "production";
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  ...(!isProduction ? [jsxLocPlugin(), vitePluginManusRuntime()] : []),
+];
 
 export default defineConfig({
   plugins,
