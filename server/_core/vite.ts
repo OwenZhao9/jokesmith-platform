@@ -70,7 +70,7 @@ export function serveStatic(app: Express) {
 
   // SPA fallback, but never return HTML for missing hashed assets.
   app.use("*", (req, res) => {
-    if (req.path.startsWith("/assets/")) {
+    if (req.originalUrl.startsWith("/assets/")) {
       res.sendStatus(404);
       return;
     }
