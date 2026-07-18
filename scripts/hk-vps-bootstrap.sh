@@ -99,6 +99,7 @@ server {
 
     server_name ${DOMAIN};
     client_max_body_size 50m;
+    root ${PROJECT_DIR}/dist/public;
 
     gzip on;
     gzip_vary on;
@@ -118,25 +119,25 @@ server {
         application/vnd.ms-fontobject;
 
     location /assets/ {
-        proxy_pass http://127.0.0.1:${APP_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        try_files \$uri =404;
         expires 1y;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
-    location / {
+    location /api/ {
         proxy_pass http://127.0.0.1:${APP_PORT};
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection "";
+        proxy_read_timeout 300s;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-cache";
     }
 }
 NGINX
