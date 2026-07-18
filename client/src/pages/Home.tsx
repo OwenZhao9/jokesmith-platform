@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Save, X, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Streamdown } from "streamdown";
 import AccessPasswordDialog from "@/components/AccessPasswordDialog";
 import {
   clearStoredSupabaseAccessSession,
@@ -51,6 +50,11 @@ const categories = [
   { value: "tech", label: "科技" },
   { value: "other", label: "其他" },
 ];
+
+const Streamdown = lazy(async () => {
+  const module = await import("streamdown");
+  return { default: module.Streamdown };
+});
 
 export default function Home() {
   const [topic, setTopic] = useState("");
@@ -343,7 +347,15 @@ export default function Home() {
           <CardContent>
             {generatedContent ? (
               <div className="prose max-w-none">
-                <Streamdown>{generatedContent}</Streamdown>
+                <Suspense
+                  fallback={
+                    <p className="text-sm text-muted-foreground">
+                      正在渲染生成结果...
+                    </p>
+                  }
+                >
+                  <Streamdown>{generatedContent}</Streamdown>
+                </Suspense>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
