@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Save, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import AccessPasswordDialog from "@/components/AccessPasswordDialog";
+import PreInterviewForm from "@/components/PreInterviewForm";
 import {
   clearStoredSupabaseAccessSession,
   generateJokeWithSupabase,
@@ -24,6 +25,10 @@ import {
   loginSupabaseAccess,
   SupabaseAdminError,
 } from "@/lib/supabaseAdmin";
+import {
+  toPromptReadyPreInterview,
+  type PreInterviewAnswers,
+} from "@shared/preInterview";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +66,8 @@ export default function Home() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
   const [usePersonalStyle, setUsePersonalStyle] = useState(false);
+  const [preInterviewAnswers, setPreInterviewAnswers] =
+    useState<PreInterviewAnswers>({});
   const [generatedContent, setGeneratedContent] = useState("");
   const [isSupabaseGenerating, setIsSupabaseGenerating] = useState(false);
   const [accessDialogOpen, setAccessDialogOpen] = useState(false);
@@ -109,6 +116,7 @@ export default function Home() {
       topic: topic.trim(),
       keywords: keywords.length > 0 ? keywords : undefined,
       usePersonalStyle,
+      preInterview: toPromptReadyPreInterview(preInterviewAnswers),
     })
       .then(data => {
         setGeneratedContent(data.content);
@@ -150,7 +158,12 @@ export default function Home() {
       topic: topic.trim(),
       keywords: keywords.length > 0 ? keywords : undefined,
       usePersonalStyle,
+      preInterview: toPromptReadyPreInterview(preInterviewAnswers),
     });
+  };
+
+  const handlePreInterviewChange = (label: string, value: string) => {
+    setPreInterviewAnswers(current => ({ ...current, [label]: value }));
   };
 
   const handleAccessLogin = () => {
@@ -227,104 +240,116 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Input Section */}
-        <Card className="club-card">
-          <CardHeader>
-            <CardTitle className="text-lg">创作设置</CardTitle>
-            <CardDescription>设置话题和关键词，开始创作</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="topic">话题 *</Label>
-              <Input
-                id="topic"
-                placeholder="例如：相亲、加班、养猫..."
-                value={topic}
-                onChange={e => setTopic(e.target.value)}
-                className="bg-input"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>关键词（可选）</Label>
-              <div className="flex gap-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          {/* Input Section */}
+          <Card className="club-card">
+            <CardHeader>
+              <CardTitle className="text-lg">创作设置</CardTitle>
+              <CardDescription>设置话题和关键词，开始创作</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="topic">话题 *</Label>
                 <Input
-                  placeholder="添加关键词"
-                  value={keywordInput}
-                  onChange={e => setKeywordInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddKeyword();
-                    }
-                  }}
+                  id="topic"
+                  placeholder="例如：相亲、加班、养猫..."
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
                   className="bg-input"
                 />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleAddKeyword}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
               </div>
-              {keywords.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {keywords.map(keyword => (
-                    <Badge key={keyword} variant="secondary" className="gap-1">
-                      {keyword}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => handleRemoveKeyword(keyword)}
-                      />
-                    </Badge>
-                  ))}
+
+              <div className="space-y-2">
+                <Label>关键词（可选）</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="添加关键词"
+                    value={keywordInput}
+                    onChange={e => setKeywordInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddKeyword();
+                      }
+                    }}
+                    className="bg-input"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleAddKeyword}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-muted/30">
-              <div className="space-y-0.5">
-                <Label htmlFor="personal-style" className="cursor-pointer">
-                  使用个人风格
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  {hasStyle
-                    ? "根据你设置的喜剧风格生成"
-                    : "请先在「个人风格」页面设置你的风格"}
-                </p>
+                {keywords.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {keywords.map(keyword => (
+                      <Badge
+                        key={keyword}
+                        variant="secondary"
+                        className="gap-1"
+                      >
+                        {keyword}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => handleRemoveKeyword(keyword)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
-              <Switch
-                id="personal-style"
-                checked={usePersonalStyle}
-                onCheckedChange={setUsePersonalStyle}
-                disabled={!hasStyle}
-              />
-            </div>
 
-            <Button
-              className="w-full neon-box-pink"
-              onClick={handleGenerate}
-              disabled={isGenerating || !topic.trim()}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  生成段子
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="flex items-center justify-between rounded-lg border border-border p-4 bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="personal-style" className="cursor-pointer">
+                    使用个人风格
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {hasStyle
+                      ? "根据你设置的喜剧风格生成"
+                      : "请先在「个人风格」页面设置你的风格"}
+                  </p>
+                </div>
+                <Switch
+                  id="personal-style"
+                  checked={usePersonalStyle}
+                  onCheckedChange={setUsePersonalStyle}
+                  disabled={!hasStyle}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <PreInterviewForm
+            answers={preInterviewAnswers}
+            onChange={handlePreInterviewChange}
+            onClear={() => setPreInterviewAnswers({})}
+          />
+
+          <Button
+            className="h-12 w-full text-base neon-box-pink"
+            onClick={handleGenerate}
+            disabled={isGenerating || !topic.trim()}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                正在提炼素材并生成舞台稿...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                根据前采生成段子
+              </>
+            )}
+          </Button>
+        </div>
 
         {/* Output Section */}
-        <Card className="club-card">
+        <Card className="club-card lg:sticky lg:top-6">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -360,7 +385,7 @@ export default function Home() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Sparkles className="h-12 w-12 mb-4 opacity-30" />
-                <p>输入话题后点击生成，AI 将为你创作段子</p>
+                <p>填写话题和前采后，AI 将生成可排练的舞台稿</p>
               </div>
             )}
           </CardContent>

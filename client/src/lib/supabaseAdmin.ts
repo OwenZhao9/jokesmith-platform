@@ -68,6 +68,7 @@ export type SupabaseGenerateJokeInput = {
   topic: string;
   keywords?: string[];
   usePersonalStyle?: boolean;
+  preInterview?: Record<string, string>;
 };
 
 export type SupabaseGenerateJokeResult = {
@@ -84,9 +85,11 @@ export type SupabaseBrainstormResult = {
   punchlines: string[];
 };
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.replace(/\/+$/, "") ?? "";
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL?.replace(/\/+$/, "") ?? "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
-const FUNCTION_NAME = import.meta.env.VITE_SUPABASE_ADMIN_FUNCTION ?? "jokesmith-admin";
+const FUNCTION_NAME =
+  import.meta.env.VITE_SUPABASE_ADMIN_FUNCTION ?? "jokesmith-admin";
 const SESSION_KEY = "jokesmith_supabase_admin_session";
 const ACCESS_SESSION_KEY = "jokesmith_supabase_access_session";
 

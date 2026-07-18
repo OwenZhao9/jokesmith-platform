@@ -18,8 +18,10 @@ import {
 } from "./_core/trpc";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
+import { buildJokePrompt, JOKE_SYSTEM_PROMPT } from "./_core/jokePrompt";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import * as db from "./db";
+import { preInterviewFieldLabels } from "@shared/preInterview";
 
 // Category enum for validation
 const categoryEnum = z.enum([
@@ -33,6 +35,31 @@ const categoryEnum = z.enum([
   "other",
 ]);
 const showStatusEnum = z.enum(["planned", "completed", "cancelled"]);
+
+const preInterviewAnswersInput = z
+  .record(z.string().max(80), z.string().max(6000))
+  .superRefine((answers, ctx) => {
+    const unknownLabels = Object.keys(answers).filter(
+      label => !preInterviewFieldLabels.has(label)
+    );
+    if (unknownLabels.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: `存在未知前采字段：${unknownLabels.join("、")}`,
+      });
+    }
+
+    const totalLength = Object.values(answers).reduce(
+      (total, value) => total + value.trim().length,
+      0
+    );
+    if (totalLength > 24000) {
+      ctx.addIssue({
+        code: "custom",
+        message: "前采素材过长，请精简到 24000 字以内",
+      });
+    }
+  });
 
 const passwordAuthInput = z.object({
   email: z.string().email().max(320),
@@ -150,7 +177,11 @@ export const appRouter = router({
           lastSignedIn: signedInAt,
         });
 
-        await createSession(ctx, user.openId, user.name || user.email || "User");
+        await createSession(
+          ctx,
+          user.openId,
+          user.name || user.email || "User"
+        );
         return { success: true } as const;
       }),
     adminLogin: publicProcedure
@@ -529,54 +560,46 @@ export const appRouter = router({
     generateJoke: protectedProcedure
       .input(
         z.object({
-          topic: z.string().min(1),
-          keywords: z.array(z.string()).optional(),
+          topic: z.string().trim().min(1).max(200),
+          keywords: z
+            .array(z.string().trim().min(1).max(40))
+            .max(12)
+            .optional(),
           usePersonalStyle: z.boolean().default(false),
+          preInterview: preInterviewAnswersInput.optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        let stylePrompt = "";
+        const personalStyle: string[] = [];
 
         if (input.usePersonalStyle) {
           const style = await db.getUserStyle(ctx.user.id);
           if (style) {
-            const styleParts = [];
             if (style.comedyStyle)
-              styleParts.push(`喜剧风格：${style.comedyStyle}`);
+              personalStyle.push(`喜剧风格：${style.comedyStyle}`);
             if (style.languageHabits)
-              styleParts.push(`语言习惯：${style.languageHabits}`);
+              personalStyle.push(`语言习惯：${style.languageHabits}`);
             if (style.commonTags && style.commonTags.length > 0)
-              styleParts.push(`常用梗：${style.commonTags.join("、")}`);
+              personalStyle.push(`常用梗：${style.commonTags.join("、")}`);
             if (style.tonePreference)
-              styleParts.push(`语气偏好：${style.tonePreference}`);
+              personalStyle.push(`语气偏好：${style.tonePreference}`);
             if (style.targetAudience)
-              styleParts.push(`目标受众：${style.targetAudience}`);
-
-            if (styleParts.length > 0) {
-              stylePrompt = `\n\n请根据以下个人风格来创作：\n${styleParts.join("\n")}`;
-            }
+              personalStyle.push(`目标受众：${style.targetAudience}`);
           }
         }
 
-        const keywordsText =
-          input.keywords && input.keywords.length > 0
-            ? `\n关键词：${input.keywords.join("、")}`
-            : "";
-
-        const prompt = `请为话题"${input.topic}"创作一段脱口秀段子。${keywordsText}${stylePrompt}
-
-要求：
-1. 段子要有明确的铺垫和包袱
-2. 语言要口语化，适合舞台表演
-3. 长度控制在200-400字
-4. 要有至少2-3个笑点`;
+        const prompt = buildJokePrompt({
+          topic: input.topic,
+          keywords: input.keywords,
+          preInterview: input.preInterview,
+          personalStyle,
+        });
 
         const response = await invokeLLM({
           messages: [
             {
               role: "system",
-              content:
-                "你是一位才华横溢的脱口秀编剧，擅长创作既有深度又有趣味的段子。你的作品风格独特，善于从日常生活中发现喜剧元素。",
+              content: JOKE_SYSTEM_PROMPT,
             },
             { role: "user", content: prompt },
           ],
